@@ -5,14 +5,38 @@ from .models import Room
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+
 # Create your views here.
 
-class RoomView(generics.CreateAPIView):
+
+class RoomView(generics.ListAPIView):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
 
-class CreateRoomView(APIView):
-    serializer_class = CreateRoomSerializer
+
+class GetRoom(APIView):
+    serializer_class = RoomSerializer
+    lookup_url_kwarg = 'code'
+
+    def get(self, request, format=None):
+        code = request.GET.get(self.lookup_url_kwarg)
+        if code:
+            print(f"Room code received: {code}")
+            room = Room.objects.filter(code=code)
+            
+            if room.exists():
+                data = RoomSerializer(room[0]).data
+                print(room[0])
+                data['is_host'] = self.request.session.session_key == room[0].host
+                print("hi")
+                print(data)
+                return Response(data, status=status.HTTP_200_OK)
+            print(f"No room found with code: {code}")
+            return Response({'Room Not Found': 'Invalid Room Code.'}, status=status.HTTP_404_NOT_FOUND)
+
+        print("Code parameter not found in request")
+        return Response({'Bad Request': 'Code parameter not found in request'}, status=status.HTTP_400_BAD_REQUEST)
+    
 
 class CreateRoomView(APIView):
     serializer_class = CreateRoomSerializer
